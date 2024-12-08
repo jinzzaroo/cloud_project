@@ -1,5 +1,6 @@
 package aws;
 
+import java.util.ArrayList;
 /*
 * Cloud Computing
 * 
@@ -8,6 +9,7 @@ package aws;
 * 
 */
 import java.util.Iterator;
+import java.util.List;
 import java.util.Scanner;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -117,7 +119,7 @@ public class awsTest {
 			System.out.println("  21. list elastic IPs            22. list volumes          ");
 			System.out.println("  23. create volume               24. delete volume         ");
 			System.out.println("  25. attach volume               26. detach volume         ");
-			System.out.println("                                  99. quit                  ");
+			System.out.println("  27. stop all instances          99. quit                  ");
 			System.out.println("------------------------------------------------------------");
 
 			System.out.print("Enter an integer: ");
@@ -422,6 +424,10 @@ public class awsTest {
 					}
 					break;
 
+				case 27:
+					stopAllInstances();
+					break;
+
 				case 99:
 					System.out.println("bye!");
 					menu.close();
@@ -621,7 +627,7 @@ public class awsTest {
 			String[] command = {
 					"ssh",
 					"-i", "C:\\Users\\jykim\\Downloads\\cloud-test.pem",
-					"ec2-user@ec2-18-215-152-15.compute-1.amazonaws.com",
+					"ec2-user@ec2-52-71-192-206.compute-1.amazonaws.com",
 					"condor_status"
 			};
 
@@ -921,6 +927,44 @@ public class awsTest {
 			DetachVolumeRequest request = new DetachVolumeRequest().withVolumeId(volumeId);
 			ec2.detachVolume(request);
 			System.out.println("Volume detached successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void stopAllInstances() {
+		System.out.println("Stopping all running instances...");
+
+		try {
+			DescribeInstancesRequest request = new DescribeInstancesRequest();
+			DescribeInstancesResult result = ec2.describeInstances(request);
+
+			List<String> runningInstanceIds = new ArrayList<>();
+
+			for (Reservation reservation : result.getReservations()) {
+				for (Instance instance : reservation.getInstances()) {
+					if (instance.getState().getName().equalsIgnoreCase("running")) {
+						runningInstanceIds.add(instance.getInstanceId());
+					}
+				}
+			}
+
+			if (runningInstanceIds.isEmpty()) {
+				System.out.println("No running instances found.");
+				return;
+			}
+
+			StopInstancesRequest stopRequest = new StopInstancesRequest()
+					.withInstanceIds(runningInstanceIds);
+
+			ec2.stopInstances(stopRequest);
+
+			System.out.println("Successfully initiated stop for the following instances:");
+			for (String instanceId : runningInstanceIds) {
+				System.out.println(" - " + instanceId);
+			}
 		} catch (AmazonServiceException e) {
 			System.err.println("AmazonServiceException: " + e.getMessage());
 		} catch (AmazonClientException e) {

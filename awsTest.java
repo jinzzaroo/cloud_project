@@ -40,7 +40,8 @@ import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
 import com.amazonaws.services.ec2.model.SecurityGroup;
-
+import com.amazonaws.services.ec2.model.CreateSecurityGroupResult;
+import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
 
 
 public class awsTest {
@@ -86,7 +87,7 @@ public class awsTest {
 			System.out.println("  5. stop instance                6. create instance        ");
 			System.out.println("  7. reboot instance              8. list images            ");
 			System.out.println("  9. condor_status                10. terminate instance    ");
-			System.out.println(" 11. describe security groups                               ");
+			System.out.println("  11. list security groups        12. create security group ");
 			System.out.println("                                  99. quit                  ");
 			System.out.println("------------------------------------------------------------");
 			
@@ -171,6 +172,20 @@ public class awsTest {
 			case 11:
 				listSecurityGroups();
 				break;
+
+			case 12:
+				System.out.print("Enter new security group name: ");
+				String sgName = "";
+				if(id_string.hasNext())
+					sgName = id_string.nextLine();
+				System.out.print("Enter description: ");
+				String sgDesc = "";
+				if(id_string.hasNext())
+					sgDesc = id_string.nextLine();
+				if(!sgName.trim().isEmpty() && !sgDesc.trim().isEmpty())
+					createSecurityGroup(sgName, sgDesc);
+				break;
+
 
 			case 99: 
 				System.out.println("bye!");
@@ -422,6 +437,16 @@ public class awsTest {
 		for(SecurityGroup sg : result.getSecurityGroups()){
 			System.out.printf("GroupName: %s, GroupId: %s, VpcId: %s\n", sg.getGroupName(), sg.getGroupId(), sg.getVpcId());
 		}
+	}
+
+
+	public static void createSecurityGroup(String groupName, String description) {
+		System.out.printf("Creating Security Group %s...\n", groupName);
+		CreateSecurityGroupRequest req = new CreateSecurityGroupRequest()
+			.withGroupName(groupName)
+			.withDescription(description);
+		CreateSecurityGroupResult res = ec2.createSecurityGroup(req);
+		System.out.printf("Security Group Created: %s\n", res.getGroupId());
 	}
 	
 

@@ -42,7 +42,12 @@ import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
 import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupResult;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
-
+import com.amazonaws.services.ec2.model.DeleteSecurityGroupRequest;
+import com.amazonaws.services.ec2.model.IpPermission;
+import com.amazonaws.services.ec2.model.IpRange;
+import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
+import com.amazonaws.services.ec2.model.RevokeSecurityGroupIngressRequest;
+import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
 
 public class awsTest {
 
@@ -57,14 +62,14 @@ public class awsTest {
 		} catch (Exception e) {
 			throw new AmazonClientException(
 					"Cannot load the credentials from the credential profiles file. " +
-					"Please make sure that your credentials file is at the correct " +
-					"location (C:/Users/jykim/.aws/credentials), and is in valid format.",
+							"Please make sure that your credentials file is at the correct " +
+							"location (C:/Users/jykim/.aws/credentials), and is in valid format.",
 					e);
 		}
 		ec2 = AmazonEC2ClientBuilder.standard()
-			.withCredentials(credentialsProvider)
-			.withRegion("us-east-1")	/* check the region at AWS console */
-			.build();
+				.withCredentials(credentialsProvider)
+				.withRegion("us-east-1") /* check the region at AWS console */
+				.build();
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -74,9 +79,8 @@ public class awsTest {
 		Scanner menu = new Scanner(System.in);
 		Scanner id_string = new Scanner(System.in);
 		int number = 0;
-		
-		while(true)
-		{
+
+		while (true) {
 			System.out.println("                                                            ");
 			System.out.println("                                                            ");
 			System.out.println("------------------------------------------------------------");
@@ -88,336 +92,413 @@ public class awsTest {
 			System.out.println("  7. reboot instance              8. list images            ");
 			System.out.println("  9. condor_status                10. terminate instance    ");
 			System.out.println("  11. list security groups        12. create security group ");
+			System.out.println("  13. delete security group       14. list inbound rules    ");
+			System.out.println("  15. add inbound rule            16. delete inbound rule   ");
 			System.out.println("                                  99. quit                  ");
 			System.out.println("------------------------------------------------------------");
-			
+
 			System.out.print("Enter an integer: ");
-			
-			if(menu.hasNextInt()){
+
+			if (menu.hasNextInt()) {
 				number = menu.nextInt();
-				}else {
-					System.out.println("concentration!");
-					break;
-				}
-			
+			} else {
+				System.out.println("concentration!");
+				break;
+			}
 
 			String instance_id = "";
 
-			switch(number) {
-			case 1: 
-				listInstances();
-				break;
-				
-			case 2: 
-				availableZones();
-				break;
-				
-			case 3: 
-				System.out.print("Enter instance id: ");
-				if(id_string.hasNext())
-					instance_id = id_string.nextLine();
-				
-				if(!instance_id.trim().isEmpty()) 
-					startInstance(instance_id);
-				break;
+			switch (number) {
+				case 1:
+					listInstances();
+					break;
 
-			case 4: 
-				availableRegions();
-				break;
+				case 2:
+					availableZones();
+					break;
 
-			case 5: 
-				System.out.print("Enter instance id: ");
-				if(id_string.hasNext())
-					instance_id = id_string.nextLine();
-				
-				if(!instance_id.trim().isEmpty()) 
-					stopInstance(instance_id);
-				break;
+				case 3:
+					System.out.print("Enter instance id: ");
+					if (id_string.hasNext())
+						instance_id = id_string.nextLine();
 
-			case 6: 
-				System.out.print("Enter ami id: ");
-				String ami_id = "";
-				if(id_string.hasNext())
-					ami_id = id_string.nextLine();
-				
-				if(!ami_id.trim().isEmpty()) 
-					createInstance(ami_id);
-				break;
+					if (!instance_id.trim().isEmpty())
+						startInstance(instance_id);
+					break;
 
-			case 7: 
-				System.out.print("Enter instance id: ");
-				if(id_string.hasNext())
-					instance_id = id_string.nextLine();
-				
-				if(!instance_id.trim().isEmpty()) 
-					rebootInstance(instance_id);
-				break;
+				case 4:
+					availableRegions();
+					break;
 
-			case 8: 
-				listImages();
-				break;
+				case 5:
+					System.out.print("Enter instance id: ");
+					if (id_string.hasNext())
+						instance_id = id_string.nextLine();
 
-			case 9:
-                condorStatus();
-                break;
+					if (!instance_id.trim().isEmpty())
+						stopInstance(instance_id);
+					break;
 
-			case 10:
-				System.out.print("Enter instance id: ");
-				if(id_string.hasNext())
-					instance_id = id_string.nextLine();
-				if(!instance_id.trim().isEmpty())
-					terminateInstance(instance_id);
-				break;
+				case 6:
+					System.out.print("Enter ami id: ");
+					String ami_id = "";
+					if (id_string.hasNext())
+						ami_id = id_string.nextLine();
 
-			case 11:
-				listSecurityGroups();
-				break;
+					if (!ami_id.trim().isEmpty())
+						createInstance(ami_id);
+					break;
 
-			case 12:
-				System.out.print("Enter new security group name: ");
-				String sgName = "";
-				if(id_string.hasNext())
-					sgName = id_string.nextLine();
-				System.out.print("Enter description: ");
-				String sgDesc = "";
-				if(id_string.hasNext())
-					sgDesc = id_string.nextLine();
-				if(!sgName.trim().isEmpty() && !sgDesc.trim().isEmpty())
-					createSecurityGroup(sgName, sgDesc);
-				break;
+				case 7:
+					System.out.print("Enter instance id: ");
+					if (id_string.hasNext())
+						instance_id = id_string.nextLine();
 
+					if (!instance_id.trim().isEmpty())
+						rebootInstance(instance_id);
+					break;
 
-			case 99: 
-				System.out.println("bye!");
-				menu.close();
-				id_string.close();
-				return;
-			default: System.out.println("concentration!");
+				case 8:
+					listImages();
+					break;
+
+				case 9:
+					condorStatus();
+					break;
+
+				case 10:
+					System.out.print("Enter instance id: ");
+					if (id_string.hasNext())
+						instance_id = id_string.nextLine();
+					if (!instance_id.trim().isEmpty())
+						terminateInstance(instance_id);
+					break;
+
+				case 11:
+					listSecurityGroups();
+					break;
+
+				case 12:
+					System.out.print("Enter new security group name: ");
+					String sgName = "";
+					if (id_string.hasNext())
+						sgName = id_string.nextLine();
+					System.out.print("Enter description: ");
+					String sgDesc = "";
+					if (id_string.hasNext())
+						sgDesc = id_string.nextLine();
+					if (!sgName.trim().isEmpty() && !sgDesc.trim().isEmpty())
+						createSecurityGroup(sgName, sgDesc);
+					break;
+
+				case 13:
+					System.out.print("Enter security group ID to delete: ");
+					String sgIdToDelete = "";
+					if (id_string.hasNext())
+						sgIdToDelete = id_string.nextLine();
+					if (!sgIdToDelete.trim().isEmpty())
+						deleteSecurityGroup(sgIdToDelete);
+					break;
+
+				case 14:
+					System.out.print("Enter security group ID to describe inbound rules: ");
+					String sgIdToDescribe = "";
+					if (id_string.hasNext())
+						sgIdToDescribe = id_string.nextLine();
+
+					if (!sgIdToDescribe.trim().isEmpty()) {
+						describeSecurityGroupIngress(sgIdToDescribe);
+					} else {
+						System.out.println("Invalid input. Please enter a valid security group ID.");
+					}
+					break;
+
+				case 15:
+					System.out.print("Enter security group ID: ");
+					String sgIdToAuthorize = "";
+					if (id_string.hasNext())
+						sgIdToAuthorize = id_string.nextLine();
+
+					System.out.print("Enter protocol (e.g., tcp): ");
+					String authorizeProtocol = "";
+					if (id_string.hasNext())
+						authorizeProtocol = id_string.nextLine();
+
+					System.out.print("Enter port: ");
+					int authorizePort = 22;
+					if (id_string.hasNextInt())
+						authorizePort = id_string.nextInt();
+					id_string.nextLine(); // Consume the newline character
+
+					System.out.print("Enter CIDR (e.g., 0.0.0.0/0): ");
+					String authorizeCidr = "";
+					if (id_string.hasNext())
+						authorizeCidr = id_string.nextLine();
+
+					if (!sgIdToAuthorize.trim().isEmpty() && !authorizeProtocol.trim().isEmpty()
+							&& !authorizeCidr.trim().isEmpty()) {
+						authorizeSecurityGroupIngress(sgIdToAuthorize, authorizeProtocol, authorizePort, authorizeCidr);
+					} else {
+						System.out.println("Invalid input. Please make sure all fields are filled.");
+					}
+					break;
+
+				case 16:
+					System.out.print("Enter security group ID: ");
+					String sgIdToRevoke = "";
+					if (id_string.hasNext())
+						sgIdToRevoke = id_string.nextLine();
+
+					System.out.print("Enter protocol (e.g., tcp): ");
+					String revokeProtocol = "";
+					if (id_string.hasNext())
+						revokeProtocol = id_string.nextLine();
+
+					System.out.print("Enter port: ");
+					int revokePort = 22;
+					if (id_string.hasNextInt())
+						revokePort = id_string.nextInt();
+					id_string.nextLine(); // Consume the newline character
+
+					System.out.print("Enter CIDR (e.g., 0.0.0.0/0): ");
+					String revokeCidr = "";
+					if (id_string.hasNext())
+						revokeCidr = id_string.nextLine();
+
+					if (!sgIdToRevoke.trim().isEmpty() && !revokeProtocol.trim().isEmpty()
+							&& !revokeCidr.trim().isEmpty()) {
+						revokeSecurityGroupIngress(sgIdToRevoke, revokeProtocol, revokePort, revokeCidr);
+					} else {
+						System.out.println("Invalid input. Please make sure all fields are filled.");
+					}
+					break;
+
+				case 99:
+					System.out.println("bye!");
+					menu.close();
+					id_string.close();
+					return;
+				default:
+					System.out.println("concentration!");
 			}
 
 		}
-		
+
 	}
 
 	public static void listInstances() {
-		
+
 		System.out.println("Listing instances....");
 		boolean done = false;
-		
+
 		DescribeInstancesRequest request = new DescribeInstancesRequest();
-		
-		while(!done) {
+
+		while (!done) {
 			DescribeInstancesResult response = ec2.describeInstances(request);
 
-			for(Reservation reservation : response.getReservations()) {
-				for(Instance instance : reservation.getInstances()) {
+			for (Reservation reservation : response.getReservations()) {
+				for (Instance instance : reservation.getInstances()) {
 					System.out.printf(
-						"[id] %s, " +
-						"[AMI] %s, " +
-						"[type] %s, " +
-						"[state] %10s, " +
-						"[monitoring state] %s",
-						instance.getInstanceId(),
-						instance.getImageId(),
-						instance.getInstanceType(),
-						instance.getState().getName(),
-						instance.getMonitoring().getState());
+							"[id] %s, " +
+									"[AMI] %s, " +
+									"[type] %s, " +
+									"[state] %10s, " +
+									"[monitoring state] %s",
+							instance.getInstanceId(),
+							instance.getImageId(),
+							instance.getInstanceType(),
+							instance.getState().getName(),
+							instance.getMonitoring().getState());
 				}
 				System.out.println();
 			}
 
 			request.setNextToken(response.getNextToken());
 
-			if(response.getNextToken() == null) {
+			if (response.getNextToken() == null) {
 				done = true;
 			}
 		}
 	}
-	
-	public static void availableZones()	{
+
+	public static void availableZones() {
 
 		System.out.println("Available zones....");
 		try {
 			DescribeAvailabilityZonesResult availabilityZonesResult = ec2.describeAvailabilityZones();
-			Iterator <AvailabilityZone> iterator = availabilityZonesResult.getAvailabilityZones().iterator();
-			
+			Iterator<AvailabilityZone> iterator = availabilityZonesResult.getAvailabilityZones().iterator();
+
 			AvailabilityZone zone;
-			while(iterator.hasNext()) {
+			while (iterator.hasNext()) {
 				zone = iterator.next();
-				System.out.printf("[id] %s,  [region] %15s, [zone] %15s\n", zone.getZoneId(), zone.getRegionName(), zone.getZoneName());
+				System.out.printf("[id] %s,  [region] %15s, [zone] %15s\n", zone.getZoneId(), zone.getRegionName(),
+						zone.getZoneName());
 			}
 			System.out.println("You have access to " + availabilityZonesResult.getAvailabilityZones().size() +
 					" Availability Zones.");
 
 		} catch (AmazonServiceException ase) {
-				System.out.println("Caught Exception: " + ase.getMessage());
-				System.out.println("Reponse Status Code: " + ase.getStatusCode());
-				System.out.println("Error Code: " + ase.getErrorCode());
-				System.out.println("Request ID: " + ase.getRequestId());
+			System.out.println("Caught Exception: " + ase.getMessage());
+			System.out.println("Reponse Status Code: " + ase.getStatusCode());
+			System.out.println("Error Code: " + ase.getErrorCode());
+			System.out.println("Request ID: " + ase.getRequestId());
 		}
-	
+
 	}
 
-	public static void startInstance(String instance_id)
-	{
-		
+	public static void startInstance(String instance_id) {
+
 		System.out.printf("Starting .... %s\n", instance_id);
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
-		DryRunSupportedRequest<StartInstancesRequest> dry_request =
-			() -> {
+		DryRunSupportedRequest<StartInstancesRequest> dry_request = () -> {
 			StartInstancesRequest request = new StartInstancesRequest()
-				.withInstanceIds(instance_id);
+					.withInstanceIds(instance_id);
 
 			return request.getDryRunRequest();
 		};
 
 		StartInstancesRequest request = new StartInstancesRequest()
-			.withInstanceIds(instance_id);
+				.withInstanceIds(instance_id);
 
 		ec2.startInstances(request);
 
 		System.out.printf("Successfully started instance %s", instance_id);
 	}
-	
-	
+
 	public static void availableRegions() {
-		
+
 		System.out.println("Available regions ....");
-		
+
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DescribeRegionsResult regions_response = ec2.describeRegions();
 
-		for(Region region : regions_response.getRegions()) {
+		for (Region region : regions_response.getRegions()) {
 			System.out.printf(
-				"[region] %15s, " +
-				"[endpoint] %s\n",
-				region.getRegionName(),
-				region.getEndpoint());
+					"[region] %15s, " +
+							"[endpoint] %s\n",
+					region.getRegionName(),
+					region.getEndpoint());
 		}
 	}
-	
+
 	public static void stopInstance(String instance_id) {
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
-		DryRunSupportedRequest<StopInstancesRequest> dry_request =
-			() -> {
+		DryRunSupportedRequest<StopInstancesRequest> dry_request = () -> {
 			StopInstancesRequest request = new StopInstancesRequest()
-				.withInstanceIds(instance_id);
+					.withInstanceIds(instance_id);
 
 			return request.getDryRunRequest();
 		};
 
 		try {
 			StopInstancesRequest request = new StopInstancesRequest()
-				.withInstanceIds(instance_id);
-	
+					.withInstanceIds(instance_id);
+
 			ec2.stopInstances(request);
 			System.out.printf("Successfully stop instance %s\n", instance_id);
 
-		} catch(Exception e)
-		{
-			System.out.println("Exception: "+e.toString());
+		} catch (Exception e) {
+			System.out.println("Exception: " + e.toString());
 		}
 
 	}
-	
+
 	public static void createInstance(String ami_id) {
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
-		
+
 		RunInstancesRequest run_request = new RunInstancesRequest()
-			.withImageId(ami_id)
-			.withInstanceType(InstanceType.T2Micro)
-			.withMaxCount(1)
-			.withMinCount(1);
+				.withImageId(ami_id)
+				.withInstanceType(InstanceType.T2Micro)
+				.withMaxCount(1)
+				.withMinCount(1);
 
 		RunInstancesResult run_response = ec2.runInstances(run_request);
 
 		String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
 
 		System.out.printf(
-			"Successfully started EC2 instance %s based on AMI %s",
-			reservation_id, ami_id);
-	
+				"Successfully started EC2 instance %s based on AMI %s",
+				reservation_id, ami_id);
+
 	}
 
 	public static void rebootInstance(String instance_id) {
-		
+
 		System.out.printf("Rebooting .... %s\n", instance_id);
-		
+
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		try {
 			RebootInstancesRequest request = new RebootInstancesRequest()
 					.withInstanceIds(instance_id);
 
-				RebootInstancesResult response = ec2.rebootInstances(request);
+			RebootInstancesResult response = ec2.rebootInstances(request);
 
-				System.out.printf(
-						"Successfully rebooted instance %s", instance_id);
+			System.out.printf(
+					"Successfully rebooted instance %s", instance_id);
 
-		} catch(Exception e)
-		{
-			System.out.println("Exception: "+e.toString());
+		} catch (Exception e) {
+			System.out.println("Exception: " + e.toString());
 		}
 
-		
 	}
-	
+
 	public static void listImages() {
 		System.out.println("Listing images....");
-		
+
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DescribeImagesRequest request = new DescribeImagesRequest();
 		ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
-		
+
 		request.getFilters().add(new Filter().withName("name").withValues("aws-htcondor-slave"));
 		request.setRequestCredentialsProvider(credentialsProvider);
-		
+
 		DescribeImagesResult results = ec2.describeImages(request);
-		
-		for(Image images :results.getImages()){
-			System.out.printf("[ImageID] %s, [Name] %s, [Owner] %s\n", 
+
+		for (Image images : results.getImages()) {
+			System.out.printf("[ImageID] %s, [Name] %s, [Owner] %s\n",
 					images.getImageId(), images.getName(), images.getOwnerId());
 		}
-		
+
 	}
 
 	public static void condorStatus() {
 		System.out.println("Running condor_status command on remote VM...");
 		try {
 			String[] command = {
-				"ssh",
-				"-i", "C:\\Users\\jykim\\Downloads\\cloud-test.pem",
-				"ec2-user@ec2-18-215-152-15.compute-1.amazonaws.com",
-				"condor_status"
+					"ssh",
+					"-i", "C:\\Users\\jykim\\Downloads\\cloud-test.pem",
+					"ec2-user@ec2-18-215-152-15.compute-1.amazonaws.com",
+					"condor_status"
 			};
-	
+
 			Process process = Runtime.getRuntime().exec(command);
-	
+
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 				String line;
 				while ((line = reader.readLine()) != null) {
 					System.out.println(line);
 				}
 			}
-	
+
 			try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
 				String errorLine;
 				while ((errorLine = errorReader.readLine()) != null) {
 					System.err.println("Error: " + errorLine);
 				}
 			}
-	
+
 			int exitCode = process.waitFor();
 			if (exitCode == 0) {
 				System.out.println("condor_status executed successfully on remote VM.");
 			} else {
 				System.err.println("condor_status exited with code: " + exitCode);
 			}
-	
+
 		} catch (Exception e) {
 			System.err.println("An error occurred while running condor_status: " + e.getMessage());
 		}
@@ -430,25 +511,119 @@ public class awsTest {
 		System.out.printf("Instance %s terminated.\n", instance_id);
 	}
 
-
 	public static void listSecurityGroups() {
 		System.out.println("Describing Security Groups...");
 		DescribeSecurityGroupsResult result = ec2.describeSecurityGroups();
-		for(SecurityGroup sg : result.getSecurityGroups()){
-			System.out.printf("GroupName: %s, GroupId: %s, VpcId: %s\n", sg.getGroupName(), sg.getGroupId(), sg.getVpcId());
+		for (SecurityGroup sg : result.getSecurityGroups()) {
+			System.out.printf("GroupName: %s, GroupId: %s, VpcId: %s\n", sg.getGroupName(), sg.getGroupId(),
+					sg.getVpcId());
 		}
 	}
-
 
 	public static void createSecurityGroup(String groupName, String description) {
 		System.out.printf("Creating Security Group %s...\n", groupName);
 		CreateSecurityGroupRequest req = new CreateSecurityGroupRequest()
-			.withGroupName(groupName)
-			.withDescription(description);
+				.withGroupName(groupName)
+				.withDescription(description);
 		CreateSecurityGroupResult res = ec2.createSecurityGroup(req);
 		System.out.printf("Security Group Created: %s\n", res.getGroupId());
 	}
-	
+
+	public static void deleteSecurityGroup(String groupId) {
+		System.out.printf("Deleting Security Group %s...\n", groupId);
+		try {
+			DeleteSecurityGroupRequest deleteRequest = new DeleteSecurityGroupRequest()
+					.withGroupId(groupId);
+
+			ec2.deleteSecurityGroup(deleteRequest);
+			System.out.println("Security Group deleted successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+			System.err.println("Error Code: " + e.getErrorCode());
+			System.err.println("Request ID: " + e.getRequestId());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void describeSecurityGroupIngress(String groupId) {
+		System.out.printf("Describing ingress rules for Security Group %s...\n", groupId);
+		try {
+			DescribeSecurityGroupsRequest request = new DescribeSecurityGroupsRequest().withGroupIds(groupId);
+			DescribeSecurityGroupsResult result = ec2.describeSecurityGroups(request);
+
+			for (SecurityGroup sg : result.getSecurityGroups()) {
+				System.out.printf("\nSecurity Group: %s (%s)\n", sg.getGroupName(), sg.getGroupId());
+				System.out.println("----------------------------------");
+				for (IpPermission permission : sg.getIpPermissions()) {
+					System.out.printf("Protocol: %s, Ports: %d - %d\n",
+							permission.getIpProtocol(),
+							permission.getFromPort() != null ? permission.getFromPort() : -1,
+							permission.getToPort() != null ? permission.getToPort() : -1);
+
+					for (IpRange range : permission.getIpv4Ranges()) {
+						System.out.printf("CIDR: %s\n", range.getCidrIp());
+					}
+					System.out.println("----------------------------------");
+				}
+			}
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+			System.err.println("Error Code: " + e.getErrorCode());
+			System.err.println("Request ID: " + e.getRequestId());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void authorizeSecurityGroupIngress(String groupId, String protocol, int port, String cidr) {
+		System.out.printf("Authorizing ingress rule for SG %s on port %d...\n", groupId, port);
+		try {
+			IpPermission ipPermission = new IpPermission()
+					.withIpProtocol(protocol)
+					.withFromPort(port)
+					.withToPort(port)
+					.withIpv4Ranges(new IpRange().withCidrIp(cidr));
+
+			AuthorizeSecurityGroupIngressRequest ingressRequest = new AuthorizeSecurityGroupIngressRequest()
+					.withGroupId(groupId)
+					.withIpPermissions(ipPermission);
+
+			ec2.authorizeSecurityGroupIngress(ingressRequest);
+			System.out.println("Ingress rule added successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+			System.err.println("Error Code: " + e.getErrorCode());
+			System.err.println("Request ID: " + e.getRequestId());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void revokeSecurityGroupIngress(String groupId, String protocol, int port, String cidr) {
+		System.out.printf("Revoking ingress rule for SG %s on port %d...\n", groupId, port);
+		try {
+			IpPermission ipPermission = new IpPermission()
+					.withIpProtocol(protocol)
+					.withFromPort(port)
+					.withToPort(port)
+					.withIpv4Ranges(new IpRange().withCidrIp(cidr));
+
+			RevokeSecurityGroupIngressRequest revokeRequest = new RevokeSecurityGroupIngressRequest()
+					.withGroupId(groupId)
+					.withIpPermissions(ipPermission);
+
+			ec2.revokeSecurityGroupIngress(revokeRequest);
+			System.out.println("Ingress rule revoked successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+			System.err.println("Error Code: " + e.getErrorCode());
+			System.err.println("Request ID: " + e.getRequestId());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+
 
 }
-	

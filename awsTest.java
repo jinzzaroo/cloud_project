@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Scanner;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -36,6 +37,8 @@ import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Filter;
+import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+
 
 
 public class awsTest {
@@ -80,8 +83,8 @@ public class awsTest {
 			System.out.println("  3. start instance               4. available regions      ");
 			System.out.println("  5. stop instance                6. create instance        ");
 			System.out.println("  7. reboot instance              8. list images            ");
-			System.out.println("  9. condor_status               			                ");
-			System.out.println("                                 99. quit                   ");
+			System.out.println("  9. condor_status                10. terminate instance    ");
+			System.out.println("                                  99. quit                  ");
 			System.out.println("------------------------------------------------------------");
 			
 			System.out.print("Enter an integer: ");
@@ -153,6 +156,14 @@ public class awsTest {
 			case 9:
                 condorStatus();
                 break;
+
+			case 10:
+				System.out.print("Enter instance id: ");
+				if(id_string.hasNext())
+					instance_id = id_string.nextLine();
+				if(!instance_id.trim().isEmpty())
+					terminateInstance(instance_id);
+				break;
 
 			case 99: 
 				System.out.println("bye!");
@@ -355,18 +366,15 @@ public class awsTest {
 	public static void condorStatus() {
 		System.out.println("Running condor_status command on remote VM...");
 		try {
-			// SSH를 통해 가상 머신에서 명령 실행
 			String[] command = {
 				"ssh",
-				"-i", "C:\\Users\\jykim\\Downloads\\cloud-test.pem", // PEM 키 파일 경로
-				"ec2-user@ec2-52-71-192-206.compute-1.amazonaws.com", // 사용자명@서버 주소
-				"condor_status" // 실행할 명령어
+				"-i", "C:\\Users\\jykim\\Downloads\\cloud-test.pem",
+				"ec2-user@ec2-18-215-152-15.compute-1.amazonaws.com",
+				"condor_status"
 			};
 	
-			// 프로세스 실행
 			Process process = Runtime.getRuntime().exec(command);
 	
-			// 명령 출력 결과 읽기
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 				String line;
 				while ((line = reader.readLine()) != null) {
@@ -374,7 +382,6 @@ public class awsTest {
 				}
 			}
 	
-			// 에러 스트림 출력 읽기
 			try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
 				String errorLine;
 				while ((errorLine = errorReader.readLine()) != null) {
@@ -382,7 +389,6 @@ public class awsTest {
 				}
 			}
 	
-			// 프로세스 종료 코드 확인
 			int exitCode = process.waitFor();
 			if (exitCode == 0) {
 				System.out.println("condor_status executed successfully on remote VM.");
@@ -393,6 +399,13 @@ public class awsTest {
 		} catch (Exception e) {
 			System.err.println("An error occurred while running condor_status: " + e.getMessage());
 		}
+	}
+
+	public static void terminateInstance(String instance_id) {
+		System.out.printf("Terminating instance %s...\n", instance_id);
+		TerminateInstancesRequest req = new TerminateInstancesRequest().withInstanceIds(instance_id);
+		ec2.terminateInstances(req);
+		System.out.printf("Instance %s terminated.\n", instance_id);
 	}
 	
 

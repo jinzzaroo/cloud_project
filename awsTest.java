@@ -58,6 +58,14 @@ import com.amazonaws.services.ec2.model.ReleaseAddressRequest;
 import com.amazonaws.services.ec2.model.Address;
 import com.amazonaws.services.ec2.model.DescribeAddressesRequest;
 import com.amazonaws.services.ec2.model.DescribeAddressesResult;
+import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.DescribeVolumesResult;
+import com.amazonaws.services.ec2.model.Volume;
+import com.amazonaws.services.ec2.model.CreateVolumeRequest;
+import com.amazonaws.services.ec2.model.CreateVolumeResult;
+import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
+import com.amazonaws.services.ec2.model.AttachVolumeRequest;
+import com.amazonaws.services.ec2.model.DetachVolumeRequest;
 
 public class awsTest {
 
@@ -106,7 +114,9 @@ public class awsTest {
 			System.out.println("  15. add inbound rule            16. delete inbound rule   ");
 			System.out.println("  17. allocate elastic IP         18. associate elastic IP  ");
 			System.out.println("  19. disassociate elastic IP     20. release elastic IP    ");
-			System.out.println("  21. list elastic IPs                                      ");
+			System.out.println("  21. list elastic IPs            22. list volumes          ");
+			System.out.println("  23. create volume               24. delete volume         ");
+			System.out.println("  25. attach volume               26. detach volume         ");
 			System.out.println("                                  99. quit                  ");
 			System.out.println("------------------------------------------------------------");
 
@@ -336,6 +346,80 @@ public class awsTest {
 
 				case 21:
 					listElasticIPs();
+					break;
+
+				case 22:
+					listVolumes();
+					break;
+
+				case 23:
+					System.out.print("Enter availability zone (e.g., us-east-1a): ");
+					String az = "";
+					if (id_string.hasNext())
+						az = id_string.nextLine();
+
+					System.out.print("Enter volume size (GB): ");
+					int size = 0;
+					if (id_string.hasNextInt())
+						size = id_string.nextInt();
+					id_string.nextLine(); // Consume the newline character
+
+					if (!az.trim().isEmpty() && size > 0) {
+						createVolume(az, size);
+					} else {
+						System.out.println("Invalid input. Please enter a valid availability zone and size.");
+					}
+					break;
+
+				case 24:
+					System.out.print("Enter volume ID to delete: ");
+					String volumeIdToDelete = "";
+					if (id_string.hasNext())
+						volumeIdToDelete = id_string.nextLine();
+
+					if (!volumeIdToDelete.trim().isEmpty()) {
+						deleteVolume(volumeIdToDelete);
+					} else {
+						System.out.println("Invalid input. Please enter a valid volume ID.");
+					}
+					break;
+
+				case 25:
+					System.out.print("Enter volume ID: ");
+					String volumeIdToAttach = "";
+					if (id_string.hasNext())
+						volumeIdToAttach = id_string.nextLine();
+
+					System.out.print("Enter instance ID: ");
+					String instanceIdToAttach = "";
+					if (id_string.hasNext())
+						instanceIdToAttach = id_string.nextLine();
+
+					System.out.print("Enter device name (e.g., /dev/sdf): ");
+					String device = "";
+					if (id_string.hasNext())
+						device = id_string.nextLine();
+
+					if (!volumeIdToAttach.trim().isEmpty() && !instanceIdToAttach.trim().isEmpty()
+							&& !device.trim().isEmpty()) {
+						attachVolume(volumeIdToAttach, instanceIdToAttach, device);
+					} else {
+						System.out
+								.println("Invalid input. Please enter valid volume ID, instance ID, and device name.");
+					}
+					break;
+
+				case 26:
+					System.out.print("Enter volume ID to detach: ");
+					String volumeIdToDetach = "";
+					if (id_string.hasNext())
+						volumeIdToDetach = id_string.nextLine();
+
+					if (!volumeIdToDetach.trim().isEmpty()) {
+						detachVolume(volumeIdToDetach);
+					} else {
+						System.out.println("Invalid input. Please enter a valid volume ID.");
+					}
 					break;
 
 				case 99:
@@ -760,6 +844,83 @@ public class awsTest {
 							address.getInstanceId() != null ? address.getInstanceId() : "Not associated");
 				}
 			}
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void listVolumes() {
+		System.out.println("Listing EBS Volumes...");
+		try {
+			DescribeVolumesRequest request = new DescribeVolumesRequest();
+			DescribeVolumesResult result = ec2.describeVolumes(request);
+
+			for (Volume volume : result.getVolumes()) {
+				System.out.printf("Volume ID: %s, Size: %d GB, State: %s, Availability Zone: %s\n",
+						volume.getVolumeId(),
+						volume.getSize(),
+						volume.getState(),
+						volume.getAvailabilityZone());
+			}
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void createVolume(String availabilityZone, int size) {
+		System.out.printf("Creating EBS Volume in %s with size %d GB...\n", availabilityZone, size);
+		try {
+			CreateVolumeRequest request = new CreateVolumeRequest()
+					.withAvailabilityZone(availabilityZone)
+					.withSize(size);
+			CreateVolumeResult result = ec2.createVolume(request);
+			System.out.printf("Created Volume ID: %s\n", result.getVolume().getVolumeId());
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void deleteVolume(String volumeId) {
+		System.out.printf("Deleting EBS Volume %s...\n", volumeId);
+		try {
+			DeleteVolumeRequest request = new DeleteVolumeRequest().withVolumeId(volumeId);
+			ec2.deleteVolume(request);
+			System.out.println("Volume deleted successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void attachVolume(String volumeId, String instanceId, String device) {
+		System.out.printf("Attaching Volume %s to Instance %s on Device %s...\n", volumeId, instanceId, device);
+		try {
+			AttachVolumeRequest request = new AttachVolumeRequest()
+					.withVolumeId(volumeId)
+					.withInstanceId(instanceId)
+					.withDevice(device);
+			ec2.attachVolume(request);
+			System.out.println("Volume attached successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void detachVolume(String volumeId) {
+		System.out.printf("Detaching Volume %s...\n", volumeId);
+		try {
+			DetachVolumeRequest request = new DetachVolumeRequest().withVolumeId(volumeId);
+			ec2.detachVolume(request);
+			System.out.println("Volume detached successfully.");
 		} catch (AmazonServiceException e) {
 			System.err.println("AmazonServiceException: " + e.getMessage());
 		} catch (AmazonClientException e) {

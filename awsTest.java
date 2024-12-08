@@ -48,6 +48,16 @@ import com.amazonaws.services.ec2.model.IpRange;
 import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
 import com.amazonaws.services.ec2.model.RevokeSecurityGroupIngressRequest;
 import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
+import com.amazonaws.services.ec2.model.AssociateAddressRequest;
+import com.amazonaws.services.ec2.model.AllocateAddressRequest;
+import com.amazonaws.services.ec2.model.AllocateAddressResult;
+import com.amazonaws.services.ec2.model.DomainType;
+import com.amazonaws.services.ec2.model.AssociateAddressResult;
+import com.amazonaws.services.ec2.model.DisassociateAddressRequest;
+import com.amazonaws.services.ec2.model.ReleaseAddressRequest;
+import com.amazonaws.services.ec2.model.Address;
+import com.amazonaws.services.ec2.model.DescribeAddressesRequest;
+import com.amazonaws.services.ec2.model.DescribeAddressesResult;
 
 public class awsTest {
 
@@ -94,6 +104,9 @@ public class awsTest {
 			System.out.println("  11. list security groups        12. create security group ");
 			System.out.println("  13. delete security group       14. list inbound rules    ");
 			System.out.println("  15. add inbound rule            16. delete inbound rule   ");
+			System.out.println("  17. allocate elastic IP         18. associate elastic IP  ");
+			System.out.println("  19. disassociate elastic IP     20. release elastic IP    ");
+			System.out.println("  21. list elastic IPs                                      ");
 			System.out.println("                                  99. quit                  ");
 			System.out.println("------------------------------------------------------------");
 
@@ -271,6 +284,58 @@ public class awsTest {
 					} else {
 						System.out.println("Invalid input. Please make sure all fields are filled.");
 					}
+					break;
+
+				case 17:
+					allocateElasticIP();
+					break;
+
+				case 18:
+					System.out.print("Enter instance ID: ");
+					String instanceId = "";
+					if (id_string.hasNext())
+						instanceId = id_string.nextLine();
+
+					System.out.print("Enter allocation ID: ");
+					String allocationId = "";
+					if (id_string.hasNext())
+						allocationId = id_string.nextLine();
+
+					if (!instanceId.trim().isEmpty() && !allocationId.trim().isEmpty()) {
+						associateElasticIP(instanceId, allocationId);
+					} else {
+						System.out.println("Invalid input. Please enter valid instance ID and allocation ID.");
+					}
+					break;
+
+				case 19:
+					System.out.print("Enter association ID: ");
+					String associationId = "";
+					if (id_string.hasNext())
+						associationId = id_string.nextLine();
+
+					if (!associationId.trim().isEmpty()) {
+						disassociateElasticIP(associationId);
+					} else {
+						System.out.println("Invalid input. Please enter a valid association ID.");
+					}
+					break;
+
+				case 20:
+					System.out.print("Enter allocation ID: ");
+					String allocIdToRelease = "";
+					if (id_string.hasNext())
+						allocIdToRelease = id_string.nextLine();
+
+					if (!allocIdToRelease.trim().isEmpty()) {
+						releaseElasticIP(allocIdToRelease);
+					} else {
+						System.out.println("Invalid input. Please enter a valid allocation ID.");
+					}
+					break;
+
+				case 21:
+					listElasticIPs();
 					break;
 
 				case 99:
@@ -624,6 +689,82 @@ public class awsTest {
 		}
 	}
 
+	public static void allocateElasticIP() {
+		System.out.println("Allocating Elastic IP...");
+		try {
+			AllocateAddressRequest request = new AllocateAddressRequest().withDomain(DomainType.Vpc);
+			AllocateAddressResult result = ec2.allocateAddress(request);
+			System.out.printf("Allocated Elastic IP: %s, Allocation ID: %s\n", result.getPublicIp(),
+					result.getAllocationId());
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
 
+	public static void associateElasticIP(String instanceId, String allocationId) {
+		System.out.printf("Associating Elastic IP (Allocation ID: %s) to instance %s...\n", allocationId, instanceId);
+		try {
+			AssociateAddressRequest request = new AssociateAddressRequest()
+					.withInstanceId(instanceId)
+					.withAllocationId(allocationId);
+			AssociateAddressResult result = ec2.associateAddress(request);
+			System.out.printf("Elastic IP associated successfully. Association ID: %s\n", result.getAssociationId());
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void disassociateElasticIP(String associationId) {
+		System.out.printf("Disassociating Elastic IP (Association ID: %s)...\n", associationId);
+		try {
+			DisassociateAddressRequest request = new DisassociateAddressRequest().withAssociationId(associationId);
+			ec2.disassociateAddress(request);
+			System.out.println("Elastic IP disassociated successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void releaseElasticIP(String allocationId) {
+		System.out.printf("Releasing Elastic IP (Allocation ID: %s)...\n", allocationId);
+		try {
+			ReleaseAddressRequest request = new ReleaseAddressRequest().withAllocationId(allocationId);
+			ec2.releaseAddress(request);
+			System.out.println("Elastic IP released successfully.");
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
+
+	public static void listElasticIPs() {
+		System.out.println("Listing Elastic IPs...");
+		try {
+			DescribeAddressesRequest request = new DescribeAddressesRequest();
+			DescribeAddressesResult result = ec2.describeAddresses(request);
+
+			if (result.getAddresses().isEmpty()) {
+				System.out.println("No Elastic IPs found.");
+			} else {
+				for (Address address : result.getAddresses()) {
+					System.out.printf("Public IP: %s, Allocation ID: %s, Instance ID: %s\n",
+							address.getPublicIp(),
+							address.getAllocationId(),
+							address.getInstanceId() != null ? address.getInstanceId() : "Not associated");
+				}
+			}
+		} catch (AmazonServiceException e) {
+			System.err.println("AmazonServiceException: " + e.getMessage());
+		} catch (AmazonClientException e) {
+			System.err.println("AmazonClientException: " + e.getMessage());
+		}
+	}
 
 }

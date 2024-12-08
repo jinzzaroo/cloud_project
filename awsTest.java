@@ -38,6 +38,8 @@ import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
+import com.amazonaws.services.ec2.model.SecurityGroup;
 
 
 
@@ -84,6 +86,7 @@ public class awsTest {
 			System.out.println("  5. stop instance                6. create instance        ");
 			System.out.println("  7. reboot instance              8. list images            ");
 			System.out.println("  9. condor_status                10. terminate instance    ");
+			System.out.println(" 11. describe security groups                               ");
 			System.out.println("                                  99. quit                  ");
 			System.out.println("------------------------------------------------------------");
 			
@@ -163,6 +166,10 @@ public class awsTest {
 					instance_id = id_string.nextLine();
 				if(!instance_id.trim().isEmpty())
 					terminateInstance(instance_id);
+				break;
+
+			case 11:
+				listSecurityGroups();
 				break;
 
 			case 99: 
@@ -406,6 +413,15 @@ public class awsTest {
 		TerminateInstancesRequest req = new TerminateInstancesRequest().withInstanceIds(instance_id);
 		ec2.terminateInstances(req);
 		System.out.printf("Instance %s terminated.\n", instance_id);
+	}
+
+
+	public static void listSecurityGroups() {
+		System.out.println("Describing Security Groups...");
+		DescribeSecurityGroupsResult result = ec2.describeSecurityGroups();
+		for(SecurityGroup sg : result.getSecurityGroups()){
+			System.out.printf("GroupName: %s, GroupId: %s, VpcId: %s\n", sg.getGroupName(), sg.getGroupId(), sg.getVpcId());
+		}
 	}
 	
 
